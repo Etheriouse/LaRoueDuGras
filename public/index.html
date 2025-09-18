@@ -5,59 +5,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La roue du gras</title>
+    <link rel="icon" type="image/png" href="/icoo.png">
     <style>
         body {
+            padding: 5%;
             height: 100vh;
-            background: #222;
+            background: #272727;
             color: #fff;
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
-            align-items: center;
         }
 
         #container {
-            display: none;
+            display: flex;
+            width: 90vw;
             gap: 10vw;
+            height: 70vh;
         }
 
         #roll {
+            padding: 5%;
             position: relative;
             display: flex;
             flex-direction: column;
+            background: #252525;
             align-items: center;
+            box-shadow: 7px 7px 10px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            border-radius: 5px;
+
         }
 
         canvas {
+            width: 40vh;
+            height: 40vh;
             border: 4px solid #fff;
             border-radius: 50%;
         }
 
         .pointer {
             position: absolute;
-            top: -45px;
+            width: 50vh;
+            height: 50vh;
             left: 50%;
+            top: 2vw;
             transform: translateX(-50%) rotate(180deg);
             width: 0;
             height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-bottom: 40px solid #fff;
+            border-left: 3vh solid transparent;
+            border-right: 3vh solid transparent;
+            border-bottom: 3vh solid #fff;
             z-index: 10;
         }
 
-
-        button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
         #menu {
-            background-color: #383838;
+            width: 100%;
+            font-size: 1vw;
+
+            background: #252525;
             border-radius: 5px;
             padding: 2%;
+            box-shadow: 7px 7px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
         }
 
         #menu h3 {
@@ -67,6 +77,14 @@
         #menu ul {
             margin: 0;
             padding-left: 20px;
+        }
+
+        li {
+            margin-top: 2%;
+        }
+
+        #btn {
+            margin-top: 2vw;
         }
     </style>
 </head>
@@ -81,8 +99,8 @@
             <style>
                 button {
                     position: relative;
-                    padding: 12px 20px;
-                    font-size: 16px;
+                    padding: 1% 3%;
+                    font-size: 1vw;
                     border: none;
                     border-radius: 8px;
                     cursor: pointer;
@@ -110,10 +128,26 @@
         </div>
 
         <div id="menu">
-            <h3>Probabilité du jour</h3>
-            <ul id="list-proba-day">
+            <div>
+                <h3 id="title-day">Probabilité du jour - </h3>
+                <ul id="list-proba-day">
 
-            </ul>
+                </ul>
+            </div>
+            <style>
+                #day-result {
+                    margin-top: 5%;
+                }
+
+                #result-spin-day {
+                    display: none;
+                }
+            </style>
+            <div id="day-result">
+                <h3>Resulta du jour:</h3>
+                <h4 id="result-spin-day">Mcdo</h4>
+                <h4 id="no-spin-result">La roue du gras n'a pas été lancé</h4>
+            </div>
         </div>
     </div>
 
@@ -123,7 +157,11 @@
         const radius = canvas.width / 2;
         var totalWeight;
 
-        fetch('http://localhost:2700/proba', {
+        const dayWeek = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+        document.getElementById('title-day').innerHTML+= dayWeek[new Date().getDay()]
+
+        fetch('http://localhost:80/proba', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -132,9 +170,16 @@
             .then(response => response.json())
             .then(data => {
                 const ListProbaDay = document.getElementById('list-proba-day');
-                if(data.canSpin) {
+
+                if (data.canSpin) {
                     document.getElementById('btn').disabled = !data.canSpin;
                     document.getElementById('btn').innerHTML = "L'heure du gras !"
+                }
+
+                if (data.dayResult) {
+                    document.getElementById('result-spin-day').innerHTML = data.dayResult;
+                    document.getElementById('result-spin-day').style.display = 'flex';
+                    document.getElementById('no-spin-result').style.display = 'none';
                 }
 
                 data.proba.forEach(element => {
@@ -189,7 +234,7 @@
         function spinRoulette() {
             document.getElementById('btn').disabled = true;
             document.getElementById('btn').innerHTML = "Assez pour aujourd'hui 🔒"
-                
+
             const randomRotation = ((Math.random() * 10) + 5) * 2 * Math.PI; // 5 à 15 tours
             const duration = 5000;
             const start = performance.now();
@@ -215,7 +260,11 @@
                         const segmentAngle = (seg.weight / totalWeight) * 2 * Math.PI;
                         cumulative += segmentAngle;
                         if (angle < cumulative) {
-                            fetch('http://localhost:2700/history', {
+                            document.getElementById('result-spin-day').innerHTML = seg.label;
+                            document.getElementById('result-spin-day').style.display = 'flex';
+                            document.getElementById('no-spin-result').style.display = 'none';
+
+                            fetch('http://localhost:80/history', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',

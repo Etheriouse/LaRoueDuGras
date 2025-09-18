@@ -1,1 +1,12 @@
-[{"type":"fast-food","label":"Mcdo","date":"2025-09-18T14:30:15.888Z"},{"type":"normal","label":"Carrefour City","date":"2025-09-18T14:09:42.672Z"},{"type":"fast-food","label":"Mcdo","date":"2025-09-18T14:05:30.056Z"},{"type":"not"},{"type":"not"}]
+[
+    {
+        "type": "normal",
+        "label": "Carrefour City",
+        "date": "2025-09-18T14:09:42.672Z"
+    },
+     {
+        "type": "fast-food",
+        "label": "BK",
+        "date": "2025-09-17T14:30:15.888Z"
+    }
+]

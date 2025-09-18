@@ -2,11 +2,15 @@ const fs = require('fs');
 const path = require('path');
 
 var lastSpin = null;
+var dayResult = null;
+
+function whatIsDayResult() {
+    return dayResult;
+}
 
 function canSpin() {
-    console.log(new Date().toISOString().substring(0, ))
     if(lastSpin != null) {
-        return new Date().toUTCString() != lastSpin.toUTCString();
+        return new Date().toISOString().substring(0, 10) != lastSpin.toISOString().substring(0, 10);
     } else {
         return true;
     }
@@ -45,6 +49,8 @@ function adjustOthers(segments, targetLabel, newWeight) {
 async function addHistoryObject(type, label) {
 
     lastSpin = new Date();
+    dayResult = label;
+   
     history.unshift({ type, label, date: new Date() });
 
     fs.writeFile(
@@ -107,4 +113,4 @@ function probabilityOfToday() {
     return proba;
 }
 
-module.exports = { probabilityOfToday, addHistoryObject, canSpin }
+module.exports = { probabilityOfToday, addHistoryObject, canSpin, whatIsDayResult }
