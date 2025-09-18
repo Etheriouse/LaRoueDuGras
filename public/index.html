@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La roue du gras</title>
+    <style>
+        body {
+            height: 100vh;
+            background: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #container {
+            display: none;
+            gap: 10vw;
+        }
+
+        #roll {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 4px solid #fff;
+            border-radius: 50%;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%) rotate(180deg);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 40px solid #fff;
+            z-index: 10;
+        }
+
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #menu {
+            background-color: #383838;
+            border-radius: 5px;
+            padding: 2%;
+        }
+
+        #menu h3 {
+            margin-top: 0;
+        }
+
+        #menu ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="container">
+        <div id="roll">
+            <div class="pointer"></div>
+            <canvas id="roulette" width="400" height="400"></canvas>
+
+            <style>
+                button {
+                    position: relative;
+                    padding: 12px 20px;
+                    font-size: 16px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: #4caf50;
+                    color: white;
+                }
+
+                button[disabled] {
+                    background: #666;
+                    cursor: not-allowed;
+                }
+
+                .lock {
+                    position: absolute;
+                    right: -30px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 20px;
+                }
+            </style>
+
+            <button onclick="spinRoulette()" id="btn" disabled>
+                Assez pour aujourd'hui 🔒
+            </button>
+        </div>
+
+        <div id="menu">
+            <h3>Probabilité du jour</h3>
+            <ul id="list-proba-day">
+
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('roulette');
+        const ctx = canvas.getContext('2d');
+        const radius = canvas.width / 2;
+        var totalWeight;
+
+        fetch('http://localhost:2700/proba', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                const ListProbaDay = document.getElementById('list-proba-day');
+                if(data.canSpin) {
+                    document.getElementById('btn').disabled = !data.canSpin;
+                    document.getElementById('btn').innerHTML = "L'heure du gras !"
+                }
+
+                data.proba.forEach(element => {
+                    segments.push(element);
+                    const li = document.createElement("li");
+                    li.innerHTML = `${element.label} - ${Number(element.weight).toFixed(1)}%`;
+                    ListProbaDay.appendChild(li);
+                })
+                console.log(segments);
+                drawWheel();
+                document.getElementById('container').style.display = "flex";
+            })
+            .catch(error => console.error('Erreur :', error));
+
+        const segments = [];
+
+        function drawWheel(rotation = 0) {
+            totalWeight = segments.reduce((sum, s) => sum + s.weight, 0);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let startAngle = rotation;
+
+            segments.forEach(seg => {
+                const segmentAngle = (seg.weight / totalWeight) * 2 * Math.PI;
+
+                // Dessiner segment
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, startAngle, startAngle + segmentAngle);
+                ctx.fillStyle = seg.color;
+                ctx.fill();
+                ctx.strokeStyle = "#222";
+                ctx.stroke();
+
+                // Texte centré sur le segment
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(startAngle + segmentAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#fff";
+                ctx.font = "16px Arial";
+                ctx.fillText(seg.label, radius - 20, 5);
+                ctx.restore();
+
+                startAngle += segmentAngle;
+            });
+        }
+
+        let currentRotation = 0;
+
+
+        function spinRoulette() {
+            document.getElementById('btn').disabled = true;
+            document.getElementById('btn').innerHTML = "Assez pour aujourd'hui 🔒"
+                
+            const randomRotation = ((Math.random() * 10) + 5) * 2 * Math.PI; // 5 à 15 tours
+            const duration = 5000;
+            const start = performance.now();
+            const initialRotation = currentRotation;
+
+            function animate(time) {
+                const elapsed = time - start;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Décélération réaliste
+                const ease = 1 - Math.pow(1 - progress, 3);
+                currentRotation = initialRotation + randomRotation * ease;
+                drawWheel(currentRotation);
+
+                if (progress < 1) requestAnimationFrame(animate);
+                else {
+                    // Pointeur en haut (canvas = 3π/2)
+                    const pointer = 3 * Math.PI / 2;
+                    const angle = (pointer - (currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+                    let cumulative = 0;
+                    for (let seg of segments) {
+                        const segmentAngle = (seg.weight / totalWeight) * 2 * Math.PI;
+                        cumulative += segmentAngle;
+                        if (angle < cumulative) {
+                            fetch('http://localhost:2700/history', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ type: seg.type, label: seg.label })
+                            })
+                            break;
+                        }
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+    </script>
+
+</body>
+
+</html>

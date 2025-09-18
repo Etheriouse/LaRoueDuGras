@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bouton verrouillé</title>
+  <style>
+    body {
+      background: #222;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+
+    button {
+      position: relative;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #4caf50;
+      color: white;
+    }
+
+    button[disabled] {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .lock {
+      position: absolute;
+      right: -30px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <button id="btn" disabled>
+    Action bloquée
+    <span class="lock">🔒</span>
+  </button>
+
+  <script>
+    // Date de déverrouillage (exemple +30 secondes)
+    const unlockDate = new Date(Date.now() + 30 * 1000);
+
+    const btn = document.getElementById("btn");
+    const lock = btn.querySelector(".lock");
+
+    function checkUnlock() {
+      const now = new Date();
+      if (now >= unlockDate) {
+        btn.disabled = false;
+        btn.textContent = "Action débloquée 🚀";
+      } else {
+        setTimeout(checkUnlock, 1000);
+      }
+    }
+
+    checkUnlock();
+  </script>
+</body>
+</html>
